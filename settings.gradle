@@ -1,0 +1,2 @@
+include ':lab7_GraphicsLab'
+include ':lab7_GraphicsLabTest'
