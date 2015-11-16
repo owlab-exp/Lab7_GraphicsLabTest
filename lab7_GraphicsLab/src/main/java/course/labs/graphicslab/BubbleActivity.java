@@ -179,22 +179,37 @@ public class BubbleActivity extends Activity {
 				float x = event.getX();
 				float y = event.getY();
 
+				boolean popped = false;
+				for(int i = 0; i < childCount; i++) {
+					View childView = mFrame.getChildAt(i);
+					Rect bound = new Rect();
+					childView.getHitRect(bound);
+					if(bound.contains((int) x, (int) y)) {
+						childView.setVisibility(View.GONE);
+						//mFrame.removeView(childView);
+						popped = true;
+						break;
+					}
+				}
 				//
 
-				BubbleView bubbleView = new BubbleView(getApplicationContext(), x, y);
+				if(!popped) {
+					BubbleView bubbleView = new BubbleView(getApplicationContext(), x, y);
 
-				mFrame.addView(bubbleView);
-				bubbleView.setVisibility(View.VISIBLE);
+					mFrame.addView(bubbleView);
+					bubbleView.setVisibility(View.VISIBLE);
 
-				Log.d(TAG, "Bubble visibility = " + (bubbleView.getVisibility() == View.VISIBLE));
-				Log.d(TAG, "Frame visibility = " + (mFrame.getVisibility() == View.VISIBLE));
+					Log.d(TAG, "Bubble visibility = " + (bubbleView.getVisibility() == View.VISIBLE));
+					Log.d(TAG, "Frame visibility = " + (mFrame.getVisibility() == View.VISIBLE));
 
 
-				childCount = mFrame.getChildCount();
-				Log.d(TAG, "Child count at last: " + childCount);
+					childCount = mFrame.getChildCount();
+					Log.d(TAG, "Child count at last: " + childCount);
+				}
+
 				
 
-				return true;
+				return false;
 			}
 		});
 	}
@@ -424,7 +439,7 @@ public class BubbleActivity extends Activity {
 		protected synchronized void onDraw(Canvas canvas) {
 
 			// TODO - save the canvas
-
+			canvas.save();
 
 			
 			// TODO - increase the rotation of the original image by mDRotate
@@ -434,16 +449,18 @@ public class BubbleActivity extends Activity {
 			
 			// TODO Rotate the canvas by current rotation
 			// Hint - Rotate around the bubble's center, not its position
+			canvas.translate(mScaledBitmap.getWidth()/2, mScaledBitmap.getHeight()/2);
+			canvas.rotate(mDRotate);
 
 
 
 			
 			// TODO - draw the bitmap at its new location
-			
+			canvas.drawBitmap(mScaledBitmap, -(mScaledBitmap.getWidth()/2), -(mScaledBitmap.getHeight()/2), null);
 
 			
 			// TODO - restore the canvas
-
+			canvas.restore();
 
 			
 		}
