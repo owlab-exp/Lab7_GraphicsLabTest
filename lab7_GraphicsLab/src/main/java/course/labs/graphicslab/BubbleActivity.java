@@ -11,10 +11,13 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.media.SoundPool;
+
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -179,28 +182,29 @@ public class BubbleActivity extends Activity {
 				float x = event.getX();
 				float y = event.getY();
 
-				boolean popped = false;
+				boolean wasPopped = false;
 				for(int i = 0; i < childCount; i++) {
 					View childView = mFrame.getChildAt(i);
-					Rect bound = new Rect();
-					childView.getHitRect(bound);
-					if(bound.contains((int) x, (int) y)) {
-						childView.setVisibility(View.GONE);
-						//mFrame.removeView(childView);
-						popped = true;
+					BubbleView bubble = (BubbleView) childView;
+
+					if(bubble.intersects(x, y)) {
+						bubble.stop(true);
+						wasPopped = true;
 						break;
 					}
+
 				}
 				//
 
-				if(!popped) {
+				if(!wasPopped) {
 					BubbleView bubbleView = new BubbleView(getApplicationContext(), x, y);
 
 					mFrame.addView(bubbleView);
 					bubbleView.setVisibility(View.VISIBLE);
+					//bubbleView.start();
 
-					Log.d(TAG, "Bubble visibility = " + (bubbleView.getVisibility() == View.VISIBLE));
-					Log.d(TAG, "Frame visibility = " + (mFrame.getVisibility() == View.VISIBLE));
+					//Log.d(TAG, "Bubble visibility = " + (bubbleView.getVisibility() == View.VISIBLE));
+					//Log.d(TAG, "Frame visibility = " + (mFrame.getVisibility() == View.VISIBLE));
 
 
 					childCount = mFrame.getChildCount();
@@ -226,8 +230,9 @@ public class BubbleActivity extends Activity {
 	@Override
 	protected void onPause() {
 		
-		// TODO - Release all SoundPool resources
+		// TODO - [done] Release all SoundPool resources
 
+		mSoundPool.release();
 
 
 
@@ -287,9 +292,9 @@ public class BubbleActivity extends Activity {
 
 			if (speedMode == RANDOM) {
 				
-				// TODO - set rotation in range [1..3]
+				// TODO - [done] set rotation in range [1..3]
 
-				mDRotate = 0;
+				mDRotate = r.nextInt(2) + 1;
 
 
 			} else {
@@ -318,11 +323,12 @@ public class BubbleActivity extends Activity {
 
 			default:
 
-				// TODO - Set movement direction and speed
+				// TODO - [working] Set movement direction and speed
 				// Limit movement speed in the x and y
 				// direction to [-3..3] pixels per movement.
 
-
+				mDx = r.nextInt(6) - 3;
+				mDy = r.nextInt(6) - 3;
 			
 			
 			
@@ -380,16 +386,18 @@ public class BubbleActivity extends Activity {
 
 		// Returns true if the BubbleView intersects position (x,y)
 		private synchronized boolean intersects(float x, float y) {
-
+			Log.d(TAG, "x:y = " + x + ":" + y);
+			//Log.d(TAG, "Bubble height: " + this.getHeight());
 			// TODO - Return true if the BubbleView intersects position (x,y)
+			Log.d(TAG, "mXPos:mYPos " + mXPos + ":" + mYPos);
+			Log.d(TAG, "mRadius: " + mRadius);
 
-
-
-
-			
-			
-			
-		    return false;
+			if((mXPos - mRadius) < x && x < (mXPos + mRadius) && ((mYPos - mRadius) < y && y < (mYPos + mRadius))) {
+				Log.d(TAG, "Intersect!");
+				return true;
+			}
+			Log.d(TAG, "Not intersect!");
+			return false;
 		}
 
 		// Cancel the Bubble's movement
@@ -407,14 +415,14 @@ public class BubbleActivity extends Activity {
 				@Override
 				public void run() {
 
-					// TODO - Remove the BubbleView from mFrame
-	
+					// TODO - [working] Remove the BubbleView from mFrame
+					mFrame.removeView(BubbleView.this);
 					
-					// TODO - If the bubble was popped by user,
+					// TODO - [working] If the bubble was popped by user,
 					// play the popping sound
 					if (wasPopped) {
 					
-						
+						mSoundPool.play(mSoundID, mStreamVolume, mStreamVolume, 1, 0, 1f);
 						
 
 					}
@@ -425,13 +433,9 @@ public class BubbleActivity extends Activity {
 		// Change the Bubble's speed and direction
 		private synchronized void deflect(float velocityX, float velocityY) {
 
-			//TODO - set mDx and mDy to be the new velocities divided by the REFRESH_RATE
-			
-
-
-
-
-
+			//TODO - [working] set mDx and mDy to be the new velocities divided by the REFRESH_RATE
+			mDx = velocityX/REFRESH_RATE;
+			mDy = velocityY/REFRESH_RATE;
 		}
 
 		// Draw the Bubble at its current location
@@ -443,20 +447,22 @@ public class BubbleActivity extends Activity {
 
 			
 			// TODO - increase the rotation of the original image by mDRotate
-
-
+			Matrix matrix = new Matrix();
+			matrix.postRotate(mDRotate);
+			Bitmap rotatedBitmap = Bitmap.createBitmap(mScaledBitmap, 0, 0, mScaledBitmap.getWidth(), mScaledBitmap.getHeight(), matrix, true);
+			mScaledBitmap = rotatedBitmap;
 
 			
 			// TODO Rotate the canvas by current rotation
 			// Hint - Rotate around the bubble's center, not its position
-			canvas.translate(mScaledBitmap.getWidth()/2, mScaledBitmap.getHeight()/2);
+			canvas.translate(rotatedBitmap.getWidth()/2, rotatedBitmap.getHeight()/2);
 			canvas.rotate(mDRotate);
 
 
 
 			
 			// TODO - draw the bitmap at its new location
-			canvas.drawBitmap(mScaledBitmap, -(mScaledBitmap.getWidth()/2), -(mScaledBitmap.getHeight()/2), null);
+			canvas.drawBitmap(rotatedBitmap, mXPos - rotatedBitmap.getWidth()/2, mYPos - rotatedBitmap.getHeight()/2, null);
 
 			
 			// TODO - restore the canvas
