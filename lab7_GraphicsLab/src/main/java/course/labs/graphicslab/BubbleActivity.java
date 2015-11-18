@@ -200,12 +200,6 @@ public class BubbleActivity extends Activity {
 					BubbleView bubbleView = new BubbleView(getApplicationContext(), x, y);
 
 					mFrame.addView(bubbleView);
-					bubbleView.setVisibility(View.VISIBLE);
-					//bubbleView.start();
-
-					//Log.d(TAG, "Bubble visibility = " + (bubbleView.getVisibility() == View.VISIBLE));
-					//Log.d(TAG, "Frame visibility = " + (mFrame.getVisibility() == View.VISIBLE));
-
 
 					childCount = mFrame.getChildCount();
 					Log.d(TAG, "Child count at last: " + childCount);
@@ -231,12 +225,7 @@ public class BubbleActivity extends Activity {
 	protected void onPause() {
 		
 		// TODO - [done] Release all SoundPool resources
-
 		mSoundPool.release();
-
-
-
-
 		super.onPause();
 	}
 
@@ -260,7 +249,7 @@ public class BubbleActivity extends Activity {
 		BubbleView(Context context, float x, float y) {
 			super(context);
 
-			Log.d(TAG, "Creating a bubble centered on (" + x + ", " + y + ")");
+			Log.d(TAG, "Taped coord.: (" + x + ", " + y + ")");
 			// Create a new random number generator to
 			// randomize size, rotation, speed and direction
 			Random r = new Random();
@@ -275,6 +264,7 @@ public class BubbleActivity extends Activity {
 			Log.d(TAG, "Its radius is " + mRadius);
 
 			// Adjust position to center the bubble under user's finger
+			// The new mXPos, mYPos will be the top-left of the bitmap
 			mXPos = x - mRadius;
 			mYPos = y - mRadius;
 
@@ -322,19 +312,13 @@ public class BubbleActivity extends Activity {
 				break;
 
 			default:
-
-				// TODO - [working] Set movement direction and speed
+				//RANDOM!
+				// TODO - [done] Set movement direction and speed
 				// Limit movement speed in the x and y
 				// direction to [-3..3] pixels per movement.
 
 				mDx = r.nextInt(6) - 3;
 				mDy = r.nextInt(6) - 3;
-			
-			
-			
-			
-			
-
 			}
 		}
 
@@ -373,7 +357,10 @@ public class BubbleActivity extends Activity {
 					// move one step. If the BubbleView exits the display, 
 					// stop the BubbleView's Worker Thread. 
 					// Otherwise, request that the BubbleView be redrawn. 
-					
+
+					//mXPos = mXPos + mDx;
+					//mYPos = mYPos + mDy;
+
 
 					
 					
@@ -387,16 +374,19 @@ public class BubbleActivity extends Activity {
 		// Returns true if the BubbleView intersects position (x,y)
 		private synchronized boolean intersects(float x, float y) {
 			Log.d(TAG, "x:y = " + x + ":" + y);
-			//Log.d(TAG, "Bubble height: " + this.getHeight());
 			// TODO - Return true if the BubbleView intersects position (x,y)
-			Log.d(TAG, "mXPos:mYPos " + mXPos + ":" + mYPos);
-			Log.d(TAG, "mRadius: " + mRadius);
 
-			if((mXPos - mRadius) < x && x < (mXPos + mRadius) && ((mYPos - mRadius) < y && y < (mYPos + mRadius))) {
-				Log.d(TAG, "Intersect!");
+			//This is based on rectangle not circle!
+//			if((x >= mXPos && x <= mXPos + mScaledBitmapWidth) && (y >= mYPos && y <= mYPos + mScaledBitmapWidth)) {
+//				return true;
+//			}
+
+			//This is more precise solution
+			double area = (Math.pow(mXPos + mRadius - x, 2) + Math.pow(mYPos + mRadius - y, 2))*Math.PI;
+			//Get the scaledBitMap's ...
+			if( area < (Math.PI * mRadiusSquared)) {
 				return true;
 			}
-			Log.d(TAG, "Not intersect!");
 			return false;
 		}
 
@@ -415,10 +405,10 @@ public class BubbleActivity extends Activity {
 				@Override
 				public void run() {
 
-					// TODO - [working] Remove the BubbleView from mFrame
+					// TODO - [done] Remove the BubbleView from mFrame
 					mFrame.removeView(BubbleView.this);
 					
-					// TODO - [working] If the bubble was popped by user,
+					// TODO - [done] If the bubble was popped by user,
 					// play the popping sound
 					if (wasPopped) {
 					
@@ -447,22 +437,23 @@ public class BubbleActivity extends Activity {
 
 			
 			// TODO - increase the rotation of the original image by mDRotate
-			Matrix matrix = new Matrix();
-			matrix.postRotate(mDRotate);
-			Bitmap rotatedBitmap = Bitmap.createBitmap(mScaledBitmap, 0, 0, mScaledBitmap.getWidth(), mScaledBitmap.getHeight(), matrix, true);
-			mScaledBitmap = rotatedBitmap;
+//			Matrix matrix = new Matrix();
+//			matrix.postRotate(mDRotate);
+//			Bitmap rotatedBitmap = Bitmap.createBitmap(mScaledBitmap, 0, 0, mScaledBitmap.getWidth(), mScaledBitmap.getHeight(), matrix, true);
+//			mScaledBitmap = rotatedBitmap;
 
 			
 			// TODO Rotate the canvas by current rotation
 			// Hint - Rotate around the bubble's center, not its position
-			canvas.translate(rotatedBitmap.getWidth()/2, rotatedBitmap.getHeight()/2);
+			//canvas.translate(mScaledBitmap.getWidth()/2, mScaledBitmap.getHeight()/2);
 			canvas.rotate(mDRotate);
 
 
 
 			
 			// TODO - draw the bitmap at its new location
-			canvas.drawBitmap(rotatedBitmap, mXPos - rotatedBitmap.getWidth()/2, mYPos - rotatedBitmap.getHeight()/2, null);
+			canvas.drawBitmap(mScaledBitmap, mXPos, mYPos, mPainter);
+
 
 			
 			// TODO - restore the canvas
